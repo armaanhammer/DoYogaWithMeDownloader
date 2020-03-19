@@ -64,8 +64,11 @@ namespace DoYogaWithMe
             foreach (var item in videos)
             {
                 var vidinfo = getvideoInfo("https://www.doyogawithme.com" + item.GetAttributeValue("href", string.Empty));
-                downloadVideo(vidinfo.Item1, vidinfo.Item2);
-                ////downloadVideo("testvideo", "https://cfe8aff5b.lwcdn.com/hls/45b8f457-7cdd-4c43-a561-80262b4ded98");
+
+                if (vidinfo.Item3 == true)
+                {
+                    downloadVideo(vidinfo.Item1, vidinfo.Item2);
+                }
             }
 
             if (doc.DocumentNode.SelectSingleNode("//ul[@class='pagination']//li[@class='next']//a") != null)
@@ -76,8 +79,9 @@ namespace DoYogaWithMe
             }
         }
 
-        static Tuple<string, string> getvideoInfo(string url)
+        static Tuple<string, string, bool> getvideoInfo(string url)
         {
+            //url = "https://www.doyogawithme.com/content/elements-day-11";
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
 
             request.KeepAlive = true;
@@ -101,6 +105,13 @@ namespace DoYogaWithMe
             var videoTeacher = doc.DocumentNode.SelectSingleNode("//article//div[@id='primary-info']//a//span[@class='info']//span[2]").InnerText.Trim(new char[] { '\r', '\n', ' ' });
 
             var playeridnode = doc.DocumentNode.SelectSingleNode("//*[@data-player-id]");
+
+            if (playeridnode == null)
+            {
+                Console.WriteLine("Unknown video found, Skipping...");
+                return Tuple.Create("", "", false);
+            }
+
             HtmlAttribute attribute = playeridnode.Attributes["data-player-id"];
             string playerId = attribute.Value;
 
@@ -111,7 +122,7 @@ namespace DoYogaWithMe
             //string jsonUrl = "https://play.lwcdn.com/web/public/native/config/" + playerId + "/" + srcID; //unused but might be useful in the future. 
             string m3u8Url = "https://cfe8aff5b.lwcdn.com/hls/" + srcID; //not sure if this is a permanant working address or will change. 
 
-            return Tuple.Create(videoTeacher + " - " + videoTitle, m3u8Url);
+            return Tuple.Create(videoTeacher + " - " + videoTitle, m3u8Url, true);
         }
 
         static bool login(string username, string password)
