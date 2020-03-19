@@ -81,48 +81,51 @@ namespace DoYogaWithMe
 
         static Tuple<string, string, bool> getvideoInfo(string url)
         {
-            //url = "https://www.doyogawithme.com/content/elements-day-11";
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-
-            request.KeepAlive = true;
-            request.UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4088.0 Safari/537.36";
-            request.Headers.Set(HttpRequestHeader.Cookie, sessName + "=" + sessValue + "; " + ssessName + "=" + ssessValue + ";");
-
-            var response = (HttpWebResponse)request.GetResponse();
-
-            string responseString = "";
-            using (Stream stream = response.GetResponseStream())
+            try
             {
-                StreamReader reader = new StreamReader(stream, Encoding.UTF8);
-                responseString = reader.ReadToEnd();
+                //url = "https://www.doyogawithme.com/content/elements-day-11";
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+
+                request.KeepAlive = true;
+                request.UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4088.0 Safari/537.36";
+                request.Headers.Set(HttpRequestHeader.Cookie, sessName + "=" + sessValue + "; " + ssessName + "=" + ssessValue + ";");
+
+                var response = (HttpWebResponse)request.GetResponse();
+
+                string responseString = "";
+                using (Stream stream = response.GetResponseStream())
+                {
+                    StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+                    responseString = reader.ReadToEnd();
+                }
+
+                var doc = new HtmlDocument();
+                doc.LoadHtml(responseString);
+
+                var videoTitle = doc.DocumentNode.SelectSingleNode("//article//div[@class='content']//h1").InnerText.Trim(new char[] { '\r', '\n', ' ' });
+
+                var videoTeacher = doc.DocumentNode.SelectSingleNode("//article//div[@id='primary-info']//a//span[@class='info']//span[2]").InnerText.Trim(new char[] { '\r', '\n', ' ' });
+
+                var playeridnode = doc.DocumentNode.SelectSingleNode("//*[@data-player-id]");
+
+                HtmlAttribute attribute = playeridnode.Attributes["data-player-id"];
+                string playerId = attribute.Value;
+
+                var srcIdnode = doc.DocumentNode.SelectSingleNode("//*[@data-player-id]//script").InnerText;
+                var thing = srcIdnode.Split(new string[] { "\"src\": \"" }, StringSplitOptions.None)[1];
+                var srcID = thing.Split(new string[] { "\",\n" }, StringSplitOptions.None)[0];
+
+                //string jsonUrl = "https://play.lwcdn.com/web/public/native/config/" + playerId + "/" + srcID; //unused but might be useful in the future. 
+                string m3u8Url = "https://cfe8aff5b.lwcdn.com/hls/" + srcID; //not sure if this is a permanant working address or will change. 
+                return Tuple.Create(videoTeacher + " - " + videoTitle, m3u8Url, true);
+
             }
-
-            var doc = new HtmlDocument();
-            doc.LoadHtml(responseString);
-
-            var videoTitle = doc.DocumentNode.SelectSingleNode("//article//div[@class='content']//h1").InnerText.Trim(new char[] { '\r', '\n', ' ' });
-
-            var videoTeacher = doc.DocumentNode.SelectSingleNode("//article//div[@id='primary-info']//a//span[@class='info']//span[2]").InnerText.Trim(new char[] { '\r', '\n', ' ' });
-
-            var playeridnode = doc.DocumentNode.SelectSingleNode("//*[@data-player-id]");
-
-            if (playeridnode == null)
+            catch (Exception)
             {
                 Console.WriteLine("Unknown video found, Skipping...");
                 return Tuple.Create("", "", false);
             }
 
-            HtmlAttribute attribute = playeridnode.Attributes["data-player-id"];
-            string playerId = attribute.Value;
-
-            var srcIdnode = doc.DocumentNode.SelectSingleNode("//*[@data-player-id]//script").InnerText;
-            var thing = srcIdnode.Split(new string[] { "\"src\": \"" }, StringSplitOptions.None)[1];
-            var srcID = thing.Split(new string[] { "\",\n" }, StringSplitOptions.None)[0];
-
-            //string jsonUrl = "https://play.lwcdn.com/web/public/native/config/" + playerId + "/" + srcID; //unused but might be useful in the future. 
-            string m3u8Url = "https://cfe8aff5b.lwcdn.com/hls/" + srcID; //not sure if this is a permanant working address or will change. 
-
-            return Tuple.Create(videoTeacher + " - " + videoTitle, m3u8Url, true);
         }
 
         static bool login(string username, string password)
