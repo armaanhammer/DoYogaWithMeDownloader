@@ -22,17 +22,25 @@ namespace DoYogaWithMe
        
         static void Main(string[] args)
         {
+            string email = "";
+            string password = "";
+
             if (args.Length != 2)
             {
                 Console.WriteLine("Username and password is required to download videos.");
-                Console.WriteLine("Please re-run this program and include your login details. ");
-                Console.WriteLine("For example: \"DoYogaWithMe.exe my@email.com myPass123\"");
-                Console.ReadKey();
-                Environment.Exit(0);
+                Console.WriteLine("Please type your email");
+                email = Console.ReadLine();
+                Console.WriteLine("Please type your password");
+                password = Console.ReadLine();
+            }
+            else
+            {
+                email = args[0];
+                password = args[1];
             }
 
             Console.WriteLine("Logging in...");
-            if (!login(args[0], args[1]))
+            if (!login(email, password))
             {
                 Console.WriteLine("Error logging in. Make sure your email/password is correct.");
                 Console.ReadKey();
